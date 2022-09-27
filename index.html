@@ -220,30 +220,27 @@ class Ping {
             ### Java + Akka Implementation
 
             ```java
-static class Pingponger extends AbstractActor {
-  @Override
-  public Receive createReceive() {
-    return receiveBuilder()
-      .match(
-        Ping.class,
-        ping -> {
-          out.println(getSelf().path() + " received ping, count down " + ping.getCount());
-          if (ping.getCount() > 0) {
-                      getSender().tell(new Ping(ping.getCount() - 1), getSelf());
-          } else {
-                      System.exit(0);
-          }
-        })
-      .build();
-  }
-}
+            static class Pingponger extends AbstractActor {
+              @Override
+              public Receive createReceive() {
+                return receiveBuilder()
+                  .match(
+                    Ping.class,
+                    ping -> {
+                      out.println(getSelf().path() + " received ping, count down " + ping.getCount());
+                      if (ping.getCount() > 0) { getSender().tell(new Ping(ping.getCount() - 1), getSelf()); }
+                      else { System.exit(0); }
+                    })
+                  .build();
+              }
+            }
 
-public static void main(String... args) {
-    ActorSystem system = ActorSystem.apply("pingpong");
-    ActorRef pinger = system.actorOf(Props.create(Pingponger.class), "pinger");
-    ActorRef ponger = system.actorOf(Props.create(Pingponger.class), "ponger");
-    pinger.tell(new Ping(10), ponger);
-}
+            public static void main(String... args) {
+                ActorSystem system = ActorSystem.apply("pingpong");
+                ActorRef pinger = system.actorOf(Props.create(Pingponger.class), "pinger");
+                ActorRef ponger = system.actorOf(Props.create(Pingponger.class), "ponger");
+                pinger.tell(new Ping(10), ponger);
+            }
             ```
 						</textarea>
 					</section>
@@ -372,29 +369,6 @@ public static void main(String... args) {
 						```
 					</textarea>
 				</section>
-
-				<section data-markdown>
-					<textarea data-template>
-						### LIVE PINGPONG
-					</textarea>
-				</section>
-
-				<section data-markdown>
-					<textarea data-template>
-						### LIVE ASYNC CHAT
-					</textarea>
-				</section>
-
-				<section data-markdown>
-					<textarea data-template>
-						<img style="width: 60%;" src="imgs/client-create.png">
-					</textarea>
-				</section>
-				<section data-markdown>
-					<textarea data-template>
-						<img style="width: 60%;" src="imgs/actor-lineread.png">
-					</textarea>
-				</section>
 			</section>
 
 			<section>
@@ -412,7 +386,7 @@ public static void main(String... args) {
 					<textarea data-template>
 						### Loom - Concepts
 
-						- Virtual Threads
+						- Virtual Threads (thousands!)
 						- `yield` in blocking std lib
 					</textarea>
 				</section>
@@ -422,6 +396,18 @@ public static void main(String... args) {
 						### LIVE LOOM CHAT
 					</textarea>
 				</section>
+
+        <section data-markdown>
+					<textarea data-template>
+						<img style="width: 60%;" src="imgs/client-create.png">
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						<img style="width: 60%;" src="imgs/actor-lineread.png">
+					</textarea>
+				</section>
+
 			</section>
 
       <section data-markdown>

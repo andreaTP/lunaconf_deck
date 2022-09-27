@@ -34,20 +34,23 @@ public interface TypedLoomActor {
     class RunnableAddress<T> implements Address<T>, Runnable {
 
         final Function<Address<T>, Behavior<T>> initial;
-        final LinkedBlockingQueue<T> mb = new LinkedBlockingQueue<>();
+        final LinkedBlockingQueue<T> mailbox = new LinkedBlockingQueue<>();
 
         RunnableAddress(Function<Address<T>, Behavior<T>> initial) {
             this.initial = initial;
         }
 
-        public Address<T> tell(T msg) { mb.offer(msg); return this; }
+        public Address<T> tell(T msg) {
+            mailbox.offer(msg);
+            return this;
+        }
 
         public void run() {
             Behavior<T> behavior = initial.apply(this);
             while (true) {
                 try {
-                    T m = mb.take();
-                    Effect<T> effect = behavior.receive(m);
+                    T message = mailbox.take();
+                    Effect<T> effect = behavior.receive(message);
                     behavior = effect.transition(behavior);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
