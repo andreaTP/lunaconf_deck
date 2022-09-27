@@ -35,7 +35,7 @@
   <!-- Include the presentation from the content Markdown file -->
   <div class="reveal">
     <div class="slides">
-      <section
+      <!-- <section
          data-markdown="slides.md"
          data-separator="^\n===============================================================================\n"
          data-separator-vertical="^\n----\n"
@@ -43,7 +43,402 @@
          >
         <script type="text/template">
         </script>
+      </section> -->
+
+
+				<section data-markdown>
+					<textarea data-template>
+						### Write You An Actor (System) For Great Good!
+						with JBang, JDK 19, records, pattern matching and virtual threads!
+					</textarea>
+        </section>
+
+        <section>
+          <div class="row">
+            <div class="col">
+            
+            <img style="width: 60%;" src="imgs/self.jpg">
+            
+            </div>
+            <div class="col tiny">
+              <h4>Andrea Peruffo</h3>  
+						
+              <p> @and_prf
+                  
+              <h4 style="margin-top:1em">Edoardo Vacchi</h3>  
+              <p> @evacchi
+            </div>
+            </div>
+        </section>
+
+				<section >
+					<img src="imgs/web.png" style="width: 60%;">
+
+					<p style="color: blue;"> evacchi.github.io
+				</section>				
+
+				<section>
+					<section data-markdown>
+						<textarea data-template>
+							### Agenda
+
+							- Java tooling - `jbang`
+							- Motivating example Actors
+							- Java 17/19 features available today
+							- Tame the ActorSystem
+							- Bonus: a sneak peek of JDK 19
+						</textarea>
+					</section>
+
+				</section>
+
+				<section>
+					<section data-markdown>
+						<textarea data-template>
+							### jbang
+
+							https://www.jbang.dev
+						</textarea>
+					</section>
+
+					<section data-markdown>
+						<textarea data-template>
+							### JBang
+
+							Unprecedented Java experience at your fingertips:
+
+							```bash
+							$ jbang init hello.java
+							$ ./hello.java
+							| [jbang] Building jar...
+							| Hello World
+							```
+						</textarea>
+					</section>
+
+					<section data-markdown="">
+						Java19 to the rescue:
+
+						```
+						//JAVA 19
+						//JAVAC_OPTIONS --enable-preview --release 19
+						//JAVA_OPTIONS  --enable-preview
+						```
+					</section>
+
+					<section data-markdown>
+						<textarea data-template>
+							### JBang
+
+							Unprecedented Java experience at your fingertips:
+
+							```java
+							import static java.lang.System.*;
+
+							public class hello {
+								sealed interface ToGreet {};
+								record User(String name) implements ToGreet {};
+								record World() implements ToGreet {};
+						
+								public static void main(String... args) {
+									switch (args.length > 0 ? new User(args[0]) : new World()) {
+										case User(var name) -> out.println("Hello " + name);
+										case World w -> out.println("Hello World!");
+									}
+								}
+							}
+							```
+						</textarea>
+					</section>
+
+				</section>
+
+				<section>
+
+					<section data-markdown>
+						<textarea data-template>
+						### The Actor Model
+
+						- Concurrency Model
+						- Simple
+						- "Single-Thread" reasoning
+						- Message-based, "Mailbox"
+						</textarea>
+					</section>
+
+					<section data-markdown>
+						<textarea data-template>
+							### The Actor Model
+					
+							- Modelling stateful systems
+							- Distributed systems (e.g. leveraging location transparency)
+							- IoT (e.g. Digital twins)
+							- ...
+						</textarea>
+					</section>
+
+					<section data-markdown>
+						<textarea data-template>
+							
+							An [actor](https://en.wikipedia.org/wiki/Actor_model) is a **computational entity** that, 
+							*in response to a message* it receives, can concurrently:
+							
+							- **send** a finite number of messages to other actors;
+							- **create** a finite number of new actors;
+							- **designate the behavior** to be used for the next message it receives.
+
+							"Everything" is an actor.
+						</textarea>
+					</section>
+				</section>
+	
+				<!--  THE ISSUE: JDK PRE-17 WITH ACTORS SUCKS -->
+				<section>
+					<section data-markdown>
+						<textarea data-template>
+            ### Java + Akka Protocol
+
+            ```java
+class Ping {
+    final int count;
+    ActorRef<Ping> replyTo;
+
+    Ping(int count, ActorRef<Ping> replyTo) {
+        this.count = count;
+        this.replyTo = replyTo;
+    }
+
+    int getCount() {
+        return count;
+    }
+
+    ActorRef<Ping> getReplyTo() {
+        return replyTo;
+    }
+}
+            ```
+						</textarea>
+					</section>
+
+					<section data-markdown>
+						<textarea data-template>
+            ### Java + Akka Implementation
+
+            ```java
+static class Pingponger extends AbstractActor {
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+      .match(
+        Ping.class,
+        ping -> {
+          out.println(getSelf().path() + " received ping, count down " + ping.getCount());
+          if (ping.getCount() > 0) {
+                      getSender().tell(new Ping(ping.getCount() - 1), getSelf());
+          } else {
+                      System.exit(0);
+          }
+        })
+      .build();
+  }
+}
+
+public static void main(String... args) {
+    ActorSystem system = ActorSystem.apply("pingpong");
+    ActorRef pinger = system.actorOf(Props.create(Pingponger.class), "pinger");
+    ActorRef ponger = system.actorOf(Props.create(Pingponger.class), "ponger");
+    pinger.tell(new Ping(10), ponger);
+}
+            ```
+						</textarea>
+					</section>
+
+					<section data-markdown>
+						<textarea data-template>
+							### Akka 
+							- clunky to write in pre-17:
+
+								- no concise way to express messages
+								- no tidy syntax to match against the types of the incoming messages
+								- no tidy way to represent closed type hierarchies
+							
+						</textarea>
+					</section>
+
+				</section>
+
+
+				<!-- JDK 17+ TO THE RESCUE -->
+				<section>
+					<!-- JAVA 19 FEATURES -->
+
+					<section data-markdown>
+						<textarea data-template>
+							### Java 17+
+						</textarea>
+					</section>
+
+
+
+					<section data-markdown>
+						<textarea data-template>
+							### Records
+
+							```
+							record User(String name) {}
+							```
+						</textarea>
+					</section>
+
+					<!-- SEALED TYPE HIERARCHIES -->
+					<section data-markdown>
+						<textarea data-template>
+							### Sealed Type Hierarchies
+
+							```
+							sealed interface GreetingTarget {};
+							record User(String name) implements GreetingTarget {};
+							record World() implements GreetingTarget {};
+							```
+						</textarea>
+					</section>
+
+					<!-- PATTERN MATCHING -->
+					<section data-markdown>
+						<textarea data-template>
+							### Pattern matching (JDK 17)
+
+							```
+							GreetingTarget tgt = ... 
+							switch (tgt) {
+								case World w -> out.println("Hello World");
+								case User u && u.name() == "..." -> out.println("Hello " + u.name());
+							}
+							```
+						</textarea>
+					</section>
+					<section data-markdown>
+						<textarea data-template>
+							### Pattern matching (JDK 19)
+
+							```
+							GreetingTarget tgt = ... 
+							switch (tgt) {
+								case World w -> out.println("Hello World");
+								case User(var name) when (name == "...") -> out.println("Hello " + name);
+							}
+							```
+						</textarea>
+					</section>
+				</section>	
+
+			<section>
+				<section data-markdown>
+					<textarea data-template>
+						### An ActorSystem
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						### API
+
+						```java
+						public interface TypedActor {
+							interface Address<T> { Address<T> tell(T msg); }
+							interface Behavior<T> { Effect<T> receive(T o); }
+							interface Effect<T> { Behavior<T> transition(Behavior<T> next); }
+						}
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						### API
+
+						```java
+						public interface TypedActor {
+							interface Address<T> { Address<T> tell(T msg); }
+							interface Behavior<T> { Effect<T> receive(T o); }
+							interface Effect<T> { Behavior<T> transition(Behavior<T> next); }							
+					
+							static <T> Effect<T> Become(Behavior<T> next) { return current -> next; }
+							static <T> Effect<T> Stay() { return current -> current; }
+							static <T> Effect<T> Die() {
+								return Become(
+									msg -> {
+										out.println("Dropping msg [" + msg + "] due to severe case of death.");
+										return Stay();
+									}
+								);
+							}
+						}
+						```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						### LIVE PINGPONG
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						### LIVE ASYNC CHAT
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						<img style="width: 60%;" src="imgs/client-create.png">
+					</textarea>
+				</section>
+				<section data-markdown>
+					<textarea data-template>
+						<img style="width: 60%;" src="imgs/actor-lineread.png">
+					</textarea>
+				</section>
+			</section>
+
+			<section>
+				<section data-markdown>
+					<textarea data-template>
+						### Loom
+
+						https://wiki.openjdk.org/display/loom/Main
+
+						Project Loom is to intended to explore, incubate and deliver Java VM features and APIs built on top of them for the purpose of supporting easy-to-use, high-throughput lightweight concurrency and **new programming models** on the Java platform. 
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						### Loom - Concepts
+
+						- Virtual Threads
+						- `yield` in blocking std lib
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+						### LIVE LOOM CHAT
+					</textarea>
+				</section>
+			</section>
+
+      <section data-markdown>
+        <textarea data-template>
+          # Thanks!
+          <br/>
+
+          <br/>
+					Q&A
+        </textarea>
       </section>
+
     </div>
   </div>
 
