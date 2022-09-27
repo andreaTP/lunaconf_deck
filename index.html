@@ -7,12 +7,12 @@
   <!-- TITLE OF THE PRESENTATION -->
   <!-- ============================================================ -->
   <title>
-    CHANGE THIS!
+    Write You An Actor (System) For Great Good!
   </title>
   <!-- ============================================================ -->
 
   <!-- Set a favicon icon (usually the lab logo) -->
-  <link rel="shortcut icon" href="assets/favicon.png">
+  <link rel="shortcut icon" href="assets/icons8-danger-64.png">
 
   <!-- Fonts -->
   <link rel="stylesheet" href="fonts/fontawesome/css/all.css">
@@ -21,10 +21,10 @@
   <!-- Reveal.js styles -->
   <link rel="stylesheet" href="packages/revealjs/dist/reset.css">
   <link rel="stylesheet" href="packages/revealjs/dist/reveal.css">
-  <link rel="stylesheet" href="packages/revealjs/dist/theme/white.css" id="theme">
+  <link rel="stylesheet" href="packages/revealjs/dist/theme/simple.css" id="theme">
 
   <!-- Theme used for syntax highlighting of code -->
-  <link rel="stylesheet" href="packages/revealjs/plugin/highlight/atom-one-dark.css" id="highlight-theme">
+  <link rel="stylesheet" href="packages/revealjs/plugin/highlight/github-gist.css" id="highlight-theme">
 
   <!-- Custom CSS for the presentation -->
   <link rel="stylesheet/less" type="text/css" href="css/style.less">
@@ -35,21 +35,18 @@
   <!-- Include the presentation from the content Markdown file -->
   <div class="reveal">
     <div class="slides">
-      <!-- <section
-         data-markdown="slides.md"
-         data-separator="^\n===============================================================================\n"
-         data-separator-vertical="^\n----\n"
-         data-separator-notes="^Note:"
-         >
-        <script type="text/template">
-        </script>
-      </section> -->
-
-
 				<section data-markdown>
 					<textarea data-template>
-						### Write You An Actor (System) For Great Good!
-						with JBang, JDK 19, records, pattern matching and virtual threads!
+          ### Write You An Actor (System) For Great Good!
+          with JBang, JDK 19, records, pattern matching and virtual threads!
+
+          ```java
+            while (true) {
+                T m = mb.take();
+                Effect<T> effect = behavior.receive(m);
+                behavior = effect.transition(behavior);
+            }
+          ```
 					</textarea>
         </section>
 
@@ -117,7 +114,7 @@
 					</section>
 
 					<section data-markdown="">
-						Java19 to the rescue:
+						Java 19 to the rescue:
 
 						```
 						//JAVA 19
@@ -129,8 +126,6 @@
 					<section data-markdown>
 						<textarea data-template>
 							### JBang
-
-							Unprecedented Java experience at your fingertips:
 
 							```java
 							import static java.lang.System.*;
@@ -433,7 +428,10 @@ public static void main(String... args) {
         <textarea data-template>
           # Thanks!
           <br/>
-
+          <a href="http://andreaperuffo.com/lunaconf_deck/">http://andreaperuffo.com/lunaconf_deck/</a>
+          <br/>
+          <a href="https://github.com/andreaTP/lunaconf_deck">https://github.com/andreaTP/lunaconf_deck</a>
+          <br/>
           <br/>
 					Q&A
         </textarea>
