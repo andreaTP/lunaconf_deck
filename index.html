@@ -80,10 +80,10 @@
 							### Agenda
 
 							- Java tooling - `jbang`
-							- Motivating example Actors
-							- Java 17/19 features available today
-							- Tame the ActorSystem
-							- Bonus: a sneak peek of JDK 19
+							- Motivating example: Actors
+							- Java 17/19 features
+							- Tame the Actor API
+							- Actors Runtime (on Loom!)
 						</textarea>
 					</section>
 
@@ -125,24 +125,24 @@
 
 					<section data-markdown>
 						<textarea data-template>
-							### JBang
+						### JBang
 
-							```java
-							import static java.lang.System.*;
+						```java
+						import static java.lang.System.*;
 
-							public class hello {
-								sealed interface ToGreet {};
-								record User(String name) implements ToGreet {};
-								record World() implements ToGreet {};
-						
-								public static void main(String... args) {
-									switch (args.length > 0 ? new User(args[0]) : new World()) {
-										case User(var name) -> out.println("Hello " + name);
-										case World w -> out.println("Hello World!");
-									}
+						public class hello {
+							sealed interface ToGreet {};
+							record User(String name) implements ToGreet {};
+							record World() implements ToGreet {};
+					
+							public static void main(String... args) {
+								switch (args.length > 0 ? new User(args[0]) : new World()) {
+									case User(var name) -> out.println("Hello " + name);
+									case World w -> out.println("Hello World!");
 								}
 							}
-							```
+						}
+						```
 						</textarea>
 					</section>
 
@@ -194,66 +194,65 @@
             ### Java + Akka Protocol
 
             ```java
-class Ping {
-    final int count;
-    ActorRef<Ping> replyTo;
+						class Ping {
+							final int count;
+							ActorRef<Ping> replyTo;
 
-    Ping(int count, ActorRef<Ping> replyTo) {
-        this.count = count;
-        this.replyTo = replyTo;
-    }
+							Ping(int count, ActorRef<Ping> replyTo) {
+								this.count = count;
+								this.replyTo = replyTo;
+							}
 
-    int getCount() {
-        return count;
-    }
+							int getCount() {
+								return count;
+							}
 
-    ActorRef<Ping> getReplyTo() {
-        return replyTo;
-    }
-}
+							ActorRef<Ping> getReplyTo() {
+								return replyTo;
+							}
+						}
             ```
 						</textarea>
 					</section>
 
 					<section data-markdown>
 						<textarea data-template>
-            ### Java + Akka Implementation
+						### Java + Akka Implementation
 
-            ```java
-            static class Pingponger extends AbstractActor {
-              @Override
-              public Receive createReceive() {
-                return receiveBuilder()
-                  .match(
-                    Ping.class,
-                    ping -> {
-                      out.println(getSelf().path() + " received ping, count down " + ping.getCount());
-                      if (ping.getCount() > 0) { getSender().tell(new Ping(ping.getCount() - 1), getSelf()); }
-                      else { System.exit(0); }
-                    })
-                  .build();
-              }
-            }
+						```java
+						static class Pingponger extends AbstractActor {
+							@Override
+							public Receive createReceive() {
+								return receiveBuilder()
+									.match(
+										Ping.class,
+										ping -> {
+											out.println(getSelf().path() + " received ping, count down " + ping.getCount());
+											if (ping.getCount() > 0) { getSender().tell(new Ping(ping.getCount() - 1), getSelf()); }
+											else { System.exit(0); }
+										})
+									.build();
+							}
+						}
 
-            public static void main(String... args) {
-                ActorSystem system = ActorSystem.apply("pingpong");
-                ActorRef pinger = system.actorOf(Props.create(Pingponger.class), "pinger");
-                ActorRef ponger = system.actorOf(Props.create(Pingponger.class), "ponger");
-                pinger.tell(new Ping(10), ponger);
-            }
-            ```
+						public static void main(String... args) {
+							ActorSystem system = ActorSystem.apply("pingpong");
+							ActorRef pinger = system.actorOf(Props.create(Pingponger.class), "pinger");
+							ActorRef ponger = system.actorOf(Props.create(Pingponger.class), "ponger");
+							pinger.tell(new Ping(10), ponger);
+						}
+						```
 						</textarea>
 					</section>
 
 					<section data-markdown>
 						<textarea data-template>
-							### Akka 
-							- clunky to write in pre-17:
+								### Akka 
+								- clunky to write in pre-17:
 
-								- no concise way to express messages
-								- no tidy syntax to match against the types of the incoming messages
-								- no tidy way to represent closed type hierarchies
-							
+									- no concise way to express messages
+									- no tidy syntax to match against the types of the incoming messages
+									- no tidy way to represent closed type hierarchies		
 						</textarea>
 					</section>
 
@@ -269,8 +268,6 @@ class Ping {
 							### Java 17+
 						</textarea>
 					</section>
-
-
 
 					<section data-markdown>
 						<textarea data-template>
@@ -327,7 +324,7 @@ class Ping {
 			<section>
 				<section data-markdown>
 					<textarea data-template>
-						### An ActorSystem
+						### Actor API
 					</textarea>
 				</section>
 
@@ -372,6 +369,49 @@ class Ping {
 			</section>
 
 			<section>
+				<section data-markdown>
+					<textarea data-template>
+						Actors on Java 19
+
+						```java
+						public interface PingPong {
+							sealed interface PingProtocol {};
+							record Ping(Address<PingProtocol> sender, Integer count) implements PingProtocol {};
+							record PoisonPill() implements PingProtocol {}; 
+					
+							static Effect<PingProtocol> pingerBehavior(Address<PingProtocol> self, PingProtocol msg) {
+								System.out.println("Received message: " + msg);
+								return switch (msg) {
+									case Ping(var sender, var count) when count > 0 -> {
+										sender.tell(new Ping(self, count - 1));
+										yield Stay();
+									}
+									case Ping p -> {
+										p.sender().tell(new PoisonPill());
+										yield Stay();
+									}
+									case PoisonPill d -> { yield Die(); }
+								};
+							}
+							static void main(String... args) {
+								var actorSystem = new TypedActor.System(Executors.newCachedThreadPool());
+								Address<PingProtocol> ponger = actorSystem.actorOf(self -> msg -> pingerBehavior(self, msg));
+								Address<PingProtocol> pinger = actorSystem.actorOf(self -> msg -> pingerBehavior(self, msg));
+								ponger.tell(new Ping(pinger, 10));
+							}
+						}					
+						```
+					</textarea>
+				</section>
+			</section>
+
+			<section>
+				<section data-markdown>
+					<textarea data-template>
+					# Actor Runtime
+					</textarea>
+				</section>
+
 				<section data-markdown>
 					<textarea data-template>
 						### Loom
