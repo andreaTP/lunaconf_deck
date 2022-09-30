@@ -374,31 +374,29 @@
 						Actors on Java 19
 
 						```java
-						public interface PingPong {
-							sealed interface PingProtocol {};
-							record Ping(Address<PingProtocol> sender, Integer count) implements PingProtocol {};
-							record PoisonPill() implements PingProtocol {}; 
-					
-							static Effect<PingProtocol> pingerBehavior(Address<PingProtocol> self, PingProtocol msg) {
-								System.out.println("Received message: " + msg);
-								return switch (msg) {
-									case Ping(var sender, var count) when count > 0 -> {
-										sender.tell(new Ping(self, count - 1));
-										yield Stay();
-									}
-									case Ping p -> {
-										p.sender().tell(new PoisonPill());
-										yield Stay();
-									}
-									case PoisonPill d -> { yield Die(); }
-								};
-							}
-							static void main(String... args) {
-								var actorSystem = new TypedActor.System(Executors.newCachedThreadPool());
-								Address<PingProtocol> ponger = actorSystem.actorOf(self -> msg -> pingerBehavior(self, msg));
-								Address<PingProtocol> pinger = actorSystem.actorOf(self -> msg -> pingerBehavior(self, msg));
-								ponger.tell(new Ping(pinger, 10));
-							}
+						sealed interface PingProtocol {};
+						record Ping(Address<PingProtocol> sender, Integer count) implements PingProtocol {};
+						record PoisonPill() implements PingProtocol {}; 
+				
+						static Effect<PingProtocol> pingerBehavior(Address<PingProtocol> self, PingProtocol msg) {
+							System.out.println("Received message: " + msg);
+							return switch (msg) {
+								case Ping(var sender, var count) when count > 0 -> {
+									sender.tell(new Ping(self, count - 1));
+									yield Stay();
+								}
+								case Ping p -> {
+									p.sender().tell(new PoisonPill());
+									yield Stay();
+								}
+								case PoisonPill d -> { yield Die(); }
+							};
+						}
+						static void main(String... args) {
+							var actorSystem = new TypedActor.System(Executors.newCachedThreadPool());
+							Address<PingProtocol> ponger = actorSystem.actorOf(self -> msg -> pingerBehavior(self, msg));
+							Address<PingProtocol> pinger = actorSystem.actorOf(self -> msg -> pingerBehavior(self, msg));
+							ponger.tell(new Ping(pinger, 10));
 						}					
 						```
 					</textarea>
@@ -408,7 +406,7 @@
 			<section>
 				<section data-markdown>
 					<textarea data-template>
-					# Actor Runtime
+					### Actor Runtime
 					</textarea>
 				</section>
 
@@ -428,6 +426,55 @@
 
 						- Virtual Threads (thousands!)
 						- `yield` in blocking std lib
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+					Loom `actorOf`
+
+					```java
+					record System() {
+						private static ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+		
+						public <T> Address<T> actorOf(Function<Address<T>, Behavior<T>> initial) {
+							var addr = new RunnableAddress<T>(initial, new LinkedBlockingQueue<>());
+							executorService.execute(addr);
+							return addr;
+						}
+					}
+					```
+					</textarea>
+				</section>
+
+				<section data-markdown>
+					<textarea data-template>
+					Loom `RunnableAddress`
+
+					```java
+					record RunnableAddress<T>(Function<Address<T>, Behavior<T>> initial, LinkedBlockingQueue<T> mailbox)
+							implements Address<T>, Runnable {
+
+						public Address<T> tell(T msg) {
+							mailbox.offer(msg);
+							return this;
+						}
+			
+						public void run() {
+							Behavior<T> behavior = initial.apply(this);
+							while (true) {
+								try {
+									T message = mailbox.take();
+									Effect<T> effect = behavior.receive(message);
+									behavior = effect.transition(behavior);
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+									break;
+								}
+							}
+						}
+					}
+					```
 					</textarea>
 				</section>
 

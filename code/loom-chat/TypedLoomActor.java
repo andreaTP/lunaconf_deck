@@ -25,20 +25,14 @@ public interface TypedLoomActor {
         // private static ExecutorService executorService = Executors.newFixedThreadPool(5); // clientManager + (2 threads X client)
 
         public <T> Address<T> actorOf(Function<Address<T>, Behavior<T>> initial) {
-            var addr = new RunnableAddress<T>(initial);
+            var addr = new RunnableAddress<T>(initial, new LinkedBlockingQueue<>());
             executorService.execute(addr);
             return addr;
         }
     }
 
-    class RunnableAddress<T> implements Address<T>, Runnable {
-
-        final Function<Address<T>, Behavior<T>> initial;
-        final LinkedBlockingQueue<T> mailbox = new LinkedBlockingQueue<>();
-
-        RunnableAddress(Function<Address<T>, Behavior<T>> initial) {
-            this.initial = initial;
-        }
+    record RunnableAddress<T>(Function<Address<T>, Behavior<T>> initial, LinkedBlockingQueue<T> mailbox)
+        implements Address<T>, Runnable {
 
         public Address<T> tell(T msg) {
             mailbox.offer(msg);
